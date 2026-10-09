@@ -23,29 +23,22 @@ export default async function handler(req, res) {
     return res.status(500).send("Missing DISCORD_APPLICATION_ID or DISCORD_BOT_TOKEN environment variable.");
   }
 
-  const command = {
-    name: "translate",
-    description: "Translate a Discord message into Arabic or English",
-    type: 1,
-    options: [
-      {
-        name: "language",
-        description: "Language to translate into",
-        type: 3,
-        required: true,
-        choices: [
-          { name: "English", value: "en" },
-          { name: "Arabic", value: "ar" }
-        ]
-      },
-      {
-        name: "message_link",
-        description: "Link to the Discord message you want translated",
-        type: 3,
-        required: true
-      }
-    ]
-  };
+  // User-installed message context commands do not require the app's bot user
+  // to be added to each server. The selected message is included in the interaction.
+  const commands = [
+    {
+      name: "Translate to Arabic",
+      type: 3,
+      integration_types: [1],
+      contexts: [0, 1, 2]
+    },
+    {
+      name: "Translate to English",
+      type: 3,
+      integration_types: [1],
+      contexts: [0, 1, 2]
+    }
+  ];
 
   try {
     const response = await fetch(
@@ -56,20 +49,20 @@ export default async function handler(req, res) {
           Authorization: "Bot " + botToken,
           "Content-Type": "application/json"
         },
-        body: JSON.stringify([command])
+        body: JSON.stringify(commands)
       }
     );
 
     const result = await response.json().catch(() => ({}));
     if (!response.ok) {
       console.error("Command registration failed:", response.status, result);
-      return res.status(502).send("Discord command registration failed. Check the application ID and bot token in Vercel.");
+      return res.status(502).send("Discord command registration failed. Check the application ID, bot token, and User Install settings.");
     }
 
     return res.status(200).json({
       success: true,
-      message: "Registered /translate. Remove COMMAND_SETUP_SECRET from Vercel now, then redeploy.",
-      commands: result.map(({ name, description }) => ({ name, description }))
+      message: "Registered user-installed message translation commands. Remove COMMAND_SETUP_SECRET from Vercel now, then redeploy.",
+      commands: result.map(({ name, type, integration_types, contexts }) => ({ name, type, integration_types, contexts }))
     });
   } catch (error) {
     console.error("Command registration error:", error);
