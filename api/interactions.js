@@ -75,7 +75,8 @@ export default async function handler(req, res) {
     }
 
     const translated = await translateText(sourceText, target);
-    return res.status(200).json(reply(translated.slice(0, 1990)));
+    const output = "\u200B\n" + translated + "\n\u200B";
+    return res.status(200).json(reply(output.slice(0, 1990)));
   } catch (error) {
     console.error("Interaction error:", error);
     return res.status(200).json(reply("Sorry, translation failed. Please try again in a moment."));
